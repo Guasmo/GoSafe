@@ -1,50 +1,156 @@
-# Welcome to your Expo app 👋
+# GoSafe - Aplicación de Seguridad y Turismo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## 📱 Descripción
+GoSafe es una aplicación móvil desarrollada con React Native y Expo que permite a los usuarios explorar Cuenca de forma segura, visualizando zonas de peligro en un mapa interactivo y configurando alertas de seguridad.
 
-## Get started
+## 🏗️ Estructura del Proyecto
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+GoSafe/
+├── app/                          # Navegación con Expo Router
+│   ├── login.tsx                # Pantalla de inicio de sesión
+│   ├── _layout.tsx              # Layout raíz
+│   └── (tabs)/                  # Tabs principales
+│       ├── index.tsx            # Tab de Maps
+│       ├── config.tsx           # Tab de Configuración
+│       └── _layout.tsx          # Layout de tabs
+│
+├── src/
+│   └── presentation/            # Capa de presentación
+│       ├── screens/             # Pantallas
+│       │   ├── auth/
+│       │   │   └── LoginScreen.tsx
+│       │   ├── map/
+│       │   │   └── MapScreen.tsx
+│       │   └── config/
+│       │       └── ConfigScreen.tsx
+│       │
+│       ├── components/          # Componentes reutilizables
+│       │   └── common/
+│       │       ├── Button.tsx
+│       │       └── Input.tsx
+│       │
+│       └── theme/               # Sistema de diseño
+│           ├── colors.ts
+│           ├── spacing.ts
+│           └── typography.ts
+│
+└── assets/                      # Recursos estáticos
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🚀 Características Implementadas
 
-## Learn more
+### ✅ Autenticación
+- Pantalla de login con validación
+- Navegación a la app principal después del login
+- Diseño moderno con tema oscuro
 
-To learn more about developing your project with Expo, look at the following resources:
+### ✅ Mapa Interactivo
+- Mapa simulado con React Native puro (sin dependencias nativas)
+- Visualización de zonas de peligro con polígonos de colores
+- Marcadores de lugares turísticos
+- Leyenda de zonas (Segura, Precaución, Peligrosa, Sin datos)
+- Controles de zoom y ubicación
+- Barra de búsqueda
+- Indicador de ubicación del usuario
+- **Nota:** Implementación visual sin mapas reales para evitar dependencias nativas
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### ✅ Configuración
+- **Alertas de Seguridad:**
+  - Toggle para activar/desactivar alertas
+  - Selección de tipos de incidentes (Asaltos, Robos, Zonas poco iluminadas)
+  - Slider de radio de notificación
+  - Configuración de sonido de notificación
 
-## Join the community
+- **Preferencias de Ruta:**
+  - Toggle para evitar zonas de alto riesgo
+  - Selección de prioridad de ruta (Más segura, Más corta, Equilibrada)
+  - Recalcular ruta automáticamente
 
-Join our community of developers creating universal apps.
+- **General:**
+  - Selección de idioma
+  - Ayuda y soporte
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 🎨 Sistema de Diseño
+
+### Colores
+- **Primary:** #2563EB (Azul)
+- **Background:** #1A1D26 (Oscuro)
+- **Zonas:**
+  - Segura: #10B981 (Verde)
+  - Precaución: #F59E0B (Naranja)
+  - Peligrosa: #EF4444 (Rojo)
+  - Sin datos: #6B7280 (Gris)
+
+### Componentes Reutilizables
+- **Button:** Botón con variantes primary/secondary y estado de carga
+- **Input:** Campo de entrada con iconos, validación y soporte para contraseñas
+
+## 📦 Dependencias Principales
+
+```json
+{
+  "expo": "~54.0.25",
+  "react": "19.1.0",
+  "react-native": "0.81.5",
+  "expo-router": "~6.0.15",
+  "@expo/vector-icons": "^15.0.3"
+}
+```
+
+**Nota:** Esta aplicación no requiere dependencias nativas adicionales y funciona completamente con Expo Go.
+
+## 🛠️ Instalación y Ejecución
+
+### Prerrequisitos
+- Node.js 18+
+- pnpm
+- Expo CLI
+- Android Studio (para Android) o Xcode (para iOS)
+
+### Instalación
+```bash
+# Instalar dependencias
+pnpm install
+
+# Iniciar el servidor de desarrollo
+pnpm start
+
+# Ejecutar en Android
+pnpm android
+
+# Ejecutar en iOS
+pnpm ios
+```
+
+## 🎯 Flujo de Navegación
+
+1. **Inicio:** La app carga en la pantalla de Login
+2. **Login:** Usuario ingresa credenciales y presiona "Iniciar Sesión"
+3. **Tabs Principales:**
+   - **Maps:** Visualización del mapa con zonas de peligro
+   - **Config:** Configuración de alertas y preferencias
+
+## 📝 Próximos Pasos (No implementados)
+
+- [ ] Implementar hooks y context
+- [ ] Integrar con backend (Firebase)
+- [ ] Implementar geolocalización en tiempo real
+- [ ] Sistema de alertas push
+- [ ] Integración con API de turismo
+- [ ] Tests unitarios y de integración
+- [ ] Modo offline con cache
+
+## 👨‍💻 Desarrollo
+
+Este proyecto sigue una arquitectura limpia con separación de capas:
+- **Presentation:** UI y componentes visuales
+- **Application:** Lógica de orquestación (hooks, context, services)
+- **Domain:** Reglas de negocio puras
+- **Infrastructure:** Implementaciones de APIs y repositorios
+
+Actualmente solo está implementada la capa de **Presentation** (maquetado).
+
+## 📄 Licencia
+
+Este proyecto es privado y está en desarrollo.
