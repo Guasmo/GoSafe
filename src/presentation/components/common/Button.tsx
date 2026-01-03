@@ -1,8 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
 
 interface ButtonProps {
     title: string;
@@ -11,6 +9,7 @@ interface ButtonProps {
     disabled?: boolean;
     loading?: boolean;
     style?: ViewStyle;
+    className?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -20,15 +19,13 @@ export const Button: React.FC<ButtonProps> = ({
     disabled = false,
     loading = false,
     style,
+    className,
 }) => {
     return (
         <TouchableOpacity
-            style={[
-                styles.button,
-                variant === 'primary' ? styles.buttonPrimary : styles.buttonSecondary,
-                disabled && styles.buttonDisabled,
-                style,
-            ]}
+            className={`py-4 px-6 rounded-xl items-center justify-center min-h-[56px] ${variant === 'primary' ? 'bg-buttonPrimary' : 'bg-buttonSecondary'
+                } ${disabled ? 'bg-buttonDisabled opacity-60' : ''} ${className || ''}`}
+            style={style}
             onPress={onPress}
             disabled={disabled || loading}
             activeOpacity={0.8}
@@ -36,34 +33,9 @@ export const Button: React.FC<ButtonProps> = ({
             {loading ? (
                 <ActivityIndicator color={colors.textPrimary} />
             ) : (
-                <Text style={styles.buttonText}>{title}</Text>
+                <Text className="text-textPrimary text-base font-semibold">{title}</Text>
             )}
         </TouchableOpacity>
     );
 };
 
-const styles = StyleSheet.create({
-    button: {
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 56,
-    },
-    buttonPrimary: {
-        backgroundColor: colors.buttonPrimary,
-    },
-    buttonSecondary: {
-        backgroundColor: colors.buttonSecondary,
-    },
-    buttonDisabled: {
-        backgroundColor: colors.buttonDisabled,
-        opacity: 0.6,
-    },
-    buttonText: {
-        color: colors.textPrimary,
-        fontSize: typography.fontSize.md,
-        fontWeight: typography.fontWeight.semibold,
-    },
-});
