@@ -1,51 +1,58 @@
+import { useAuthContext } from '@/hooks/useAuthContext';
+import notificationService from '@/services/notificationServices';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Button } from '../../components/common/Button';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Input } from '../../components/common/Input';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
 
 export default function LoginScreen() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
+    const { login, loading: authLoading } = useAuthContext();
 
-    const handleLogin = async () => {
-        setLoading(true);
-        // Simulate login
-        setTimeout(() => {
-            setLoading(false);
-            router.replace('/(tabs)');
-        }, 1500);
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+
+    const handleLogin = async (): Promise<void> => {
+        if (!email.trim() || !password.trim()) {
+            return;
+        }
+
+        try {
+            const result = await login(email.trim(), password);
+
+            if (result.success) {
+                router.replace('/(tabs)');
+            }
+        } catch (error) {
+            notificationService.error('Error', 'No se pudo iniciar sesión');
+        }
     };
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            className="flex-1 bg-background"
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                className="flex-grow"
                 keyboardShouldPersistTaps="handled"
             >
-                <View style={styles.content}>
+                <View className="flex-1 px-6 pt-24 pb-8">
                     {/* Logo */}
-                    <View style={styles.logoContainer}>
-                        <View style={styles.logoCircle}>
-                            <Text style={styles.logoIcon}>🧭</Text>
+                    <View className="items-center mb-8">
+                        <View className="w-20 h-20 rounded-[20px] bg-primaryDark items-center justify-center">
+                            <Text className="text-[40px]">🧭</Text>
                         </View>
                     </View>
 
                     {/* Title */}
-                    <Text style={styles.title}>Bienvenido de Vuelta</Text>
-                    <Text style={styles.subtitle}>
+                    <Text className="text-[32px] font-bold text-textPrimary text-center mb-2">Bienvenido</Text>
+                    <Text className="text-base text-textSecondary text-center mb-8">
                         Inicia sesión para explorar Cuenca de forma segura.
                     </Text>
 
                     {/* Form */}
-                    <View style={styles.form}>
+                    <View className="mt-6">
                         <Input
                             label="Correo electrónico o usuario"
                             placeholder="Introduce tu correo o usuario"
@@ -65,21 +72,29 @@ export default function LoginScreen() {
                             isPassword
                         />
 
-                        <TouchableOpacity style={styles.forgotPassword}>
-                            <Text style={styles.forgotPasswordText}>Olvidé mi contraseña</Text>
+                        <TouchableOpacity className="self-end mb-6">
+                            <Text className="text-primary text-sm">Olvidé mi contraseña</Text>
                         </TouchableOpacity>
 
-                        <Button
-                            title="Iniciar Sesión"
+                        <TouchableOpacity
+                            className={`bg-black rounded-xl p-[18px] items-center mb-6 shadow-md ${authLoading ? 'opacity-60' : ''}`}
                             onPress={handleLogin}
-                            loading={loading}
-                            style={styles.loginButton}
-                        />
+                            activeOpacity={0.8}
+                            disabled={authLoading}
+                        >
+                            {authLoading ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text className="text-white text-[17px] font-semibold tracking-wide">
+                                    Iniciar Sesión
+                                </Text>
+                            )}
+                        </TouchableOpacity>
 
-                        <View style={styles.registerContainer}>
-                            <Text style={styles.registerText}>¿Aún no eres miembro? </Text>
+                        <View className="flex-row justify-center items-center">
+                            <Text className="text-textSecondary text-sm">¿Aún no eres miembro? </Text>
                             <TouchableOpacity>
-                                <Text style={styles.registerLink}>Regístrate aquí</Text>
+                                <Text className="text-primary text-sm font-semibold">Regístrate aquí</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -89,74 +104,3 @@ export default function LoginScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    scrollContent: {
-        flexGrow: 1,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.xxl * 2,
-        paddingBottom: spacing.xl,
-    },
-    logoContainer: {
-        alignItems: 'center',
-        marginBottom: spacing.xl,
-    },
-    logoCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 20,
-        backgroundColor: colors.primaryDark,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    logoIcon: {
-        fontSize: 40,
-    },
-    title: {
-        fontSize: typography.fontSize.xxl,
-        fontWeight: typography.fontWeight.bold,
-        color: colors.textPrimary,
-        textAlign: 'center',
-        marginBottom: spacing.sm,
-    },
-    subtitle: {
-        fontSize: typography.fontSize.md,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: spacing.xl,
-    },
-    form: {
-        marginTop: spacing.lg,
-    },
-    forgotPassword: {
-        alignSelf: 'flex-end',
-        marginBottom: spacing.lg,
-    },
-    forgotPasswordText: {
-        color: colors.primary,
-        fontSize: typography.fontSize.sm,
-    },
-    loginButton: {
-        marginBottom: spacing.lg,
-    },
-    registerContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    registerText: {
-        color: colors.textSecondary,
-        fontSize: typography.fontSize.sm,
-    },
-    registerLink: {
-        color: colors.primary,
-        fontSize: typography.fontSize.sm,
-        fontWeight: typography.fontWeight.semibold,
-    },
-});

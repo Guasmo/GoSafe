@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -35,137 +36,91 @@ const MapLegend: React.FC<MapLegendProps> = ({ visible }) => {
     );
 };
 
-interface MarkerProps {
-    title: string;
-    top: number;
-    left: number;
-    color?: string;
-}
-
-const Marker: React.FC<MarkerProps> = ({ title, top, left, color = colors.primary }) => (
-    <View style={[styles.marker, { top, left }]}>
-        <View style={[styles.markerPin, { backgroundColor: color }]}>
-            <Ionicons name="location" size={24} color="white" />
-        </View>
-        <Text style={styles.markerLabel}>{title}</Text>
-    </View>
-);
-
-interface ZoneProps {
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-    color: string;
-}
-
-const Zone: React.FC<ZoneProps> = ({ top, left, width, height, color }) => (
-    <View
-        style={[
-            styles.zone,
-            {
-                top,
-                left,
-                width,
-                height,
-                backgroundColor: `${color}40`,
-                borderColor: color,
-            },
-        ]}
-    />
-);
-
 export default function MapScreen() {
     const [showLegend, setShowLegend] = useState(false);
     const [zoom, setZoom] = useState(1);
 
+    const handleZoomIn = () => {
+        setZoom(prev => Math.min(prev + 0.2, 2));
+    };
+
+    const handleZoomOut = () => {
+        setZoom(prev => Math.max(prev - 0.2, 0.5));
+    };
+
+    const handleCenterMap = () => {
+        setZoom(1);
+    };
+
     return (
-        <View style={styles.container}>
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchBar}>
-                    <Ionicons name="search" size={20} color={colors.textSecondary} />
-                    <Text style={styles.searchPlaceholder}>Buscar un lugar...</Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.content}>
+                {/* Search Bar */}
+                <View style={styles.searchContainer}>
+                    <View style={styles.searchBar}>
+                        <Ionicons name="search" size={20} color={colors.textSecondary} />
+                        <Text style={styles.searchPlaceholder}>Buscar un lugar...</Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.legendButton}
+                        onPress={() => setShowLegend(!showLegend)}
+                    >
+                        <Ionicons name="layers" size={24} color={colors.textPrimary} />
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                    style={styles.legendButton}
-                    onPress={() => setShowLegend(!showLegend)}
-                >
-                    <Ionicons name="layers" size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
-            </View>
 
-            {/* Map Container */}
-            <ScrollView
-                style={styles.mapScrollView}
-                contentContainerStyle={styles.mapContent}
-                showsVerticalScrollIndicator={false}
-                showsHorizontalScrollIndicator={false}
-            >
-                <View style={[styles.mapCanvas, { transform: [{ scale: zoom }] }]}>
-                    {/* Background - Simulated map */}
-                    <View style={styles.mapBackground}>
-                        <View style={styles.gridLine} />
-                        <View style={[styles.gridLine, { top: '25%' }]} />
-                        <View style={[styles.gridLine, { top: '50%' }]} />
-                        <View style={[styles.gridLine, { top: '75%' }]} />
-                        <View style={[styles.gridLine, { transform: [{ rotate: '90deg' }], left: '25%' }]} />
-                        <View style={[styles.gridLine, { transform: [{ rotate: '90deg' }], left: '50%' }]} />
-                        <View style={[styles.gridLine, { transform: [{ rotate: '90deg' }], left: '75%' }]} />
+                {/* Map Mockup */}
+                <View style={styles.mapContainer}>
+                    <Image
+                        source={require('../../../../assets/images/map-mockup.png')}
+                        style={[styles.mapImage, { transform: [{ scale: zoom }] }]}
+                        resizeMode="cover"
+                    />
 
-                        {/* City name */}
-                        <Text style={styles.cityName}>CUENCA</Text>
-
-                        {/* Streets simulation */}
-                        <View style={[styles.street, { top: '30%', left: 0, width: '100%', height: 3 }]} />
-                        <View style={[styles.street, { top: '60%', left: 0, width: '100%', height: 3 }]} />
-                        <View style={[styles.street, { top: 0, left: '40%', width: 3, height: '100%' }]} />
-                        <View style={[styles.street, { top: 0, left: '70%', width: 3, height: '100%' }]} />
+                    {/* Precision Badge */}
+                    <View style={styles.precisionBadge}>
+                        <Text style={styles.precisionText}>Precisión: baja</Text>
                     </View>
 
-                    {/* Danger Zones */}
-                    <Zone top={100} left={150} width={120} height={100} color={colors.zoneDanger} />
-                    <Zone top={80} left={50} width={100} height={90} color={colors.zoneWarning} />
-                    <Zone top={200} left={250} width={110} height={95} color={colors.zoneSafe} />
-                    <Zone top={150} left={300} width={90} height={80} color={colors.zoneNoData} />
+                    {/* Scale Indicator */}
+                    <View style={styles.scaleContainer}>
+                        <View style={styles.scaleLine} />
+                        <Text style={styles.scaleText}>200 m</Text>
+                    </View>
 
-                    {/* Markers */}
-                    <Marker title="Racar Shopping" top={120} left={180} />
-                    <Marker title="Parque De La Luz" top={210} left={280} color={colors.success} />
-
-                    {/* User location */}
-                    <View style={[styles.userLocation, { top: 180, left: 200 }]}>
+                    {/* User Location Dot */}
+                    <View style={styles.userLocation}>
                         <View style={styles.userLocationDot} />
                         <View style={styles.userLocationPulse} />
                     </View>
                 </View>
-            </ScrollView>
 
-            {/* Legend */}
-            <MapLegend visible={showLegend} />
+                {/* Legend */}
+                <MapLegend visible={showLegend} />
 
-            {/* Map Controls */}
-            <View style={styles.controls}>
-                <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={() => setZoom(Math.min(zoom + 0.2, 2))}
-                >
-                    <Ionicons name="add" size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={() => setZoom(Math.max(zoom - 0.2, 0.5))}
-                >
-                    <Ionicons name="remove" size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={() => setZoom(1)}
-                >
-                    <Ionicons name="locate" size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
+                {/* Map Controls */}
+                <View style={styles.controls}>
+                    <TouchableOpacity
+                        style={styles.controlButton}
+                        onPress={handleZoomIn}
+                    >
+                        <Ionicons name="add" size={24} color={colors.textPrimary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.controlButton}
+                        onPress={handleZoomOut}
+                    >
+                        <Ionicons name="remove" size={24} color={colors.textPrimary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.controlButton}
+                        onPress={handleCenterMap}
+                    >
+                        <Ionicons name="locate" size={24} color={colors.textPrimary} />
+                    </TouchableOpacity>
+                </View>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -174,9 +129,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
+    content: {
+        flex: 1,
+    },
     searchContainer: {
         position: 'absolute',
-        top: spacing.md,
+        top: Platform.OS === 'ios' ? spacing.md : spacing.lg,
         left: spacing.md,
         right: spacing.md,
         zIndex: 10,
@@ -192,6 +150,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
         gap: spacing.sm,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
     searchPlaceholder: {
         color: colors.textSecondary,
@@ -205,112 +168,99 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: 48,
         height: 48,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
-    mapScrollView: {
+    mapContainer: {
         flex: 1,
-    },
-    mapContent: {
-        padding: spacing.xl,
-        paddingTop: 80,
-    },
-    mapCanvas: {
-        width: 400,
-        height: 500,
-        position: 'relative',
-    },
-    mapBackground: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#E8F5E9',
-        borderRadius: 8,
-        position: 'relative',
+        backgroundColor: '#E5E3DF',
         overflow: 'hidden',
-    },
-    gridLine: {
-        position: 'absolute',
-        width: '100%',
-        height: 1,
-        backgroundColor: colors.border,
-        opacity: 0.3,
-    },
-    cityName: {
-        position: 'absolute',
-        top: '45%',
-        left: '50%',
-        transform: [{ translateX: -50 }, { translateY: -10 }],
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: colors.textTertiary,
-        opacity: 0.2,
-    },
-    street: {
-        position: 'absolute',
-        backgroundColor: '#BDBDBD',
-        opacity: 0.4,
-    },
-    zone: {
-        position: 'absolute',
-        borderWidth: 2,
-        borderRadius: 8,
-    },
-    marker: {
-        position: 'absolute',
-        alignItems: 'center',
-    },
-    markerPin: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    mapImage: {
+        width: '100%',
+        height: '100%',
+    },
+    precisionBadge: {
+        position: 'absolute',
+        bottom: 120,
+        alignSelf: 'center',
+        backgroundColor: '#4A90E2',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 5,
     },
-    markerLabel: {
-        marginTop: 4,
-        backgroundColor: colors.backgroundCard,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
+    precisionText: {
+        color: 'white',
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.medium,
+    },
+    scaleContainer: {
+        position: 'absolute',
+        bottom: 120,
+        right: spacing.md,
+        alignItems: 'flex-end',
+    },
+    scaleLine: {
+        width: 60,
+        height: 3,
+        backgroundColor: '#333',
+        marginBottom: 4,
+    },
+    scaleText: {
+        color: '#333',
         fontSize: typography.fontSize.xs,
-        color: colors.textPrimary,
-        fontWeight: typography.fontWeight.semibold,
+        fontWeight: typography.fontWeight.medium,
     },
     userLocation: {
         position: 'absolute',
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
+        bottom: '45%',
+        right: '15%',
     },
     userLocationDot: {
         width: 16,
         height: 16,
         borderRadius: 8,
-        backgroundColor: colors.primary,
+        backgroundColor: '#4A90E2',
         borderWidth: 3,
         borderColor: 'white',
-        zIndex: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
     },
     userLocationPulse: {
         position: 'absolute',
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: colors.primary,
-        opacity: 0.2,
+        backgroundColor: 'rgba(74, 144, 226, 0.2)',
+        top: -12,
+        left: -12,
     },
     legend: {
         position: 'absolute',
-        top: 80,
+        top: Platform.OS === 'ios' ? 80 : 90,
         right: spacing.md,
         backgroundColor: colors.backgroundCard,
         borderRadius: 12,
         padding: spacing.md,
         zIndex: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
     legendTitle: {
         color: colors.textPrimary,
@@ -335,7 +285,7 @@ const styles = StyleSheet.create({
     },
     controls: {
         position: 'absolute',
-        bottom: spacing.xl,
+        bottom: spacing.xl + 60, // Espacio para el tab bar
         right: spacing.md,
         gap: spacing.sm,
         zIndex: 10,
@@ -348,5 +298,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: 48,
         height: 48,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
 });

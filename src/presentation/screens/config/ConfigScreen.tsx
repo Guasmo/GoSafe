@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -89,17 +90,12 @@ export default function ConfigScreen() {
     const [selectedRoute, setSelectedRoute] = useState('Más segura');
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Configuración</Text>
-                <View style={{ width: 24 }} />
-            </View>
-
+        <SafeAreaView style={styles.container}>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Configuraci</Text>
+                </View>
+
                 {/* Alertas de Seguridad */}
                 <SettingSection title="Alertas de Seguridad">
                     <ToggleSetting
@@ -210,7 +206,7 @@ export default function ConfigScreen() {
                     <Button title="Guardar Cambios" onPress={() => { }} />
                 </View>
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -219,20 +215,16 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
-        backgroundColor: colors.backgroundCard,
-    },
     backButton: {
         padding: spacing.xs,
     },
+    header: {
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+    },
     headerTitle: {
-        fontSize: typography.fontSize.lg,
-        fontWeight: typography.fontWeight.semibold,
+        fontSize: typography.fontSize.xl,
+        fontWeight: typography.fontWeight.bold,
         color: colors.textPrimary,
     },
     scrollView: {
