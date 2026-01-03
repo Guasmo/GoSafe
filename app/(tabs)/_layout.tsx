@@ -15,7 +15,7 @@ export default function TabLayout() {
           backgroundColor: colors.backgroundCard,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 60,
+          height: 65,
           paddingBottom: 8,
           paddingTop: 8,
         },
@@ -39,6 +39,15 @@ export default function TabLayout() {
           title: 'Config',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
           ),
         }}
       />
