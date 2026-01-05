@@ -1,10 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
+import { useMapWebView } from '../../../../hooks/useMapWebView';
+import { useUserLocation } from '../../../../hooks/useUserLocation';
+import { useZones } from '../../../../hooks/useZones';
+import { DangerousZone } from '../../../../interfaces/DangerousZone';
+import { ZoneDetailModal } from '../../components/ZoneDetailModal';
 import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
 
 interface MapLegendProps {
     visible: boolean;
@@ -14,23 +18,19 @@ const MapLegend: React.FC<MapLegendProps> = ({ visible }) => {
     if (!visible) return null;
 
     return (
-        <View style={styles.legend}>
-            <Text style={styles.legendTitle}>Leyenda</Text>
-            <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: colors.zoneSafe }]} />
-                <Text style={styles.legendText}>Segura</Text>
+        <View className="absolute top-20 right-4 bg-[#2A2A2A] rounded-xl p-4 shadow-lg z-10">
+            <Text className="text-white text-base font-semibold mb-2">Leyenda</Text>
+            <View className="flex-row items-center mb-1">
+                <View className="w-4 h-4 rounded" style={{ backgroundColor: colors.zoneSafe }} />
+                <Text className="text-gray-300 text-sm ml-2">Turístico</Text>
             </View>
-            <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: colors.zoneWarning }]} />
-                <Text style={styles.legendText}>Precaución</Text>
+            <View className="flex-row items-center mb-1">
+                <View className="w-4 h-4 rounded" style={{ backgroundColor: colors.zoneWarning }} />
+                <Text className="text-gray-300 text-sm ml-2">Precaución</Text>
             </View>
-            <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: colors.zoneDanger }]} />
-                <Text style={styles.legendText}>Peligrosa</Text>
-            </View>
-            <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: colors.zoneNoData }]} />
-                <Text style={styles.legendText}>Sin datos</Text>
+            <View className="flex-row items-center">
+                <View className="w-4 h-4 rounded" style={{ backgroundColor: colors.zoneDanger }} />
+                <Text className="text-gray-300 text-sm ml-2">Peligrosa</Text>
             </View>
         </View>
     );
@@ -38,270 +38,212 @@ const MapLegend: React.FC<MapLegendProps> = ({ visible }) => {
 
 export default function MapScreen() {
     const [showLegend, setShowLegend] = useState(false);
-    const [zoom, setZoom] = useState(1);
+    const [selectedZone, setSelectedZone] = useState<DangerousZone | null>(null);
 
-    const handleZoomIn = () => {
-        setZoom(prev => Math.min(prev + 0.2, 2));
+    // Custom hooks
+    const { zones, loading } = useZones();
+    const { userLocation, getCurrentLocation } = useUserLocation();
+    const { webViewRef, handleWebViewMessage, centerMapOnLocation } = useMapWebView({
+        zones,
+        userLocation,
+        onZoneClick: (zoneId) => {
+            const zone = zones.find(z => z.id === zoneId);
+            if (zone) setSelectedZone(zone);
+        }
+    });
+
+    const handleCenterMap = async () => {
+        const location = await getCurrentLocation();
+        if (location) {
+            centerMapOnLocation(location.latitude, location.longitude);
+        }
     };
 
-    const handleZoomOut = () => {
-        setZoom(prev => Math.max(prev - 0.2, 0.5));
-    };
+    const leafletHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style>
+            body { margin: 0; padding: 0; }
+            #map { width: 100%; height: 100vh; }
+            
+            /* Custom User Location Marker */
+            .user-location-marker {
+                background-color: #4285F4;
+                border: 2px solid white;
+                border-radius: 50%;
+                width: 12px;
+                height: 12px;
+                box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            }
 
-    const handleCenterMap = () => {
-        setZoom(1);
-    };
+            /* Custom Tourist Marker */
+            .tourist-marker {
+                background-color: transparent;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script>
+            // Use CartoDB Voyager for a cleaner map style (less clutter)
+            var map = L.map('map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([-2.8974, -79.0050], 16); // Zoomed in on Cuenca
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20
+            }).addTo(map);
+
+            var markersLayer = L.layerGroup().addTo(map);
+            var userMarker = null;
+
+            // Custom SVG Icon for Tourist Spots (Green Pin)
+            var touristIconHtml = \`
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 0C11.1634 0 4 7.16344 4 16C4 26.5 20 40 20 40C20 40 36 26.5 36 16C36 7.16344 28.8366 0 20 0Z" fill="${colors.zoneSafe}"/>
+                    <circle cx="20" cy="16" r="6" fill="white"/>
+                </svg>
+            \`;
+
+            var touristIcon = L.divIcon({
+                className: 'tourist-marker',
+                html: touristIconHtml,
+                iconSize: [40, 40],
+                iconAnchor: [20, 40]
+            });
+
+            window.updateZones = function(zonesData) {
+                markersLayer.clearLayers();
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'LOG', message: 'Updating zones in WebView: ' + zonesData.length }));
+
+                zonesData.forEach(function(zone) {
+                    var isTouristSpot = zone.dangerLevel.name === 'SAFE';
+
+                    if (isTouristSpot && zone.coordinates.length > 0) {
+                        var centerLat = 0, centerLng = 0;
+                        zone.coordinates.forEach(function(c) { 
+                            centerLat += parseFloat(c.latitude); 
+                            centerLng += parseFloat(c.longitude); 
+                        });
+                        centerLat /= zone.coordinates.length;
+                        centerLng /= zone.coordinates.length;
+                        
+                        window.ReactNativeWebView.postMessage(JSON.stringify({ 
+                            type: 'LOG', 
+                            message: 'Creating marker at: ' + centerLat + ', ' + centerLng 
+                        }));
+                        
+                        // Use SVG Icon
+                        var marker = L.marker([centerLat, centerLng], { icon: touristIcon }).addTo(markersLayer);
+                        
+                        marker.on('click', function() {
+                            window.ReactNativeWebView.postMessage(JSON.stringify({
+                                type: 'ZONE_CLICK',
+                                zoneId: zone.id
+                            }));
+                        });
+                    } else if (zone.coordinates && zone.coordinates.length > 0) {
+                        var latlngs = zone.coordinates.map(function(coord) {
+                            return [parseFloat(coord.latitude), parseFloat(coord.longitude)];
+                        });
+
+                        var polygon = L.polygon(latlngs, {
+                            color: zone.dangerLevel.color,
+                            fillColor: zone.dangerLevel.color,
+                            fillOpacity: 0.4,
+                            weight: 2
+                        }).addTo(markersLayer);
+                        
+                        polygon.on('click', function() {
+                             window.ReactNativeWebView.postMessage(JSON.stringify({
+                                type: 'ZONE_CLICK',
+                                zoneId: zone.id
+                            }));
+                        });
+                    }
+                });
+            };
+
+            var userIcon = L.divIcon({
+                className: 'user-location-marker',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            window.updateUserLocation = function(lat, lng) {
+                if (userMarker) {
+                    userMarker.setLatLng([lat, lng]);
+                } else {
+                    userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
+                }
+            };
+        </script>
+    </body>
+    </html>
+    `;
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                {/* Search Bar */}
-                <View style={styles.searchContainer}>
-                    <View style={styles.searchBar}>
-                        <Ionicons name="search" size={20} color={colors.textSecondary} />
-                        <Text style={styles.searchPlaceholder}>Buscar un lugar...</Text>
+        <SafeAreaView className="flex-1 bg-[#1A1A1A]">
+            <View className="flex-1">
+                {/* Search Bar and Legend Button */}
+                <View
+                    className="absolute left-4 right-4 z-10 flex-row gap-2"
+                    style={{ top: Platform.OS === 'ios' ? 16 : 24 }}
+                >
+                    <View className="flex-1 flex-row items-center bg-[#2A2A2A] rounded-xl px-4 py-3 gap-2 shadow-lg">
+                        <Ionicons name="search" size={20} color="#9CA3AF" />
+                        <Text className="text-gray-400 text-base">Buscar un lugar...</Text>
                     </View>
                     <TouchableOpacity
-                        style={styles.legendButton}
+                        className="bg-[#2A2A2A] rounded-xl p-3 justify-center items-center w-12 h-12 shadow-lg"
                         onPress={() => setShowLegend(!showLegend)}
                     >
-                        <Ionicons name="layers" size={24} color={colors.textPrimary} />
+                        <Ionicons name="layers" size={24} color="white" />
                     </TouchableOpacity>
                 </View>
 
-                {/* Map Mockup */}
-                <View style={styles.mapContainer}>
-                    <Image
-                        source={require('../../../../assets/images/map-mockup.png')}
-                        style={[styles.mapImage, { transform: [{ scale: zoom }] }]}
-                        resizeMode="cover"
+                {/* Map Container */}
+                <View className="flex-1 bg-[#E5E3DF] overflow-hidden">
+                    <WebView
+                        ref={webViewRef}
+                        originWhitelist={['*']}
+                        source={{ html: leafletHtml }}
+                        className="w-full h-full"
+                        onMessage={handleWebViewMessage}
                     />
-
-                    {/* Precision Badge */}
-                    <View style={styles.precisionBadge}>
-                        <Text style={styles.precisionText}>Precisión: baja</Text>
-                    </View>
-
-                    {/* Scale Indicator */}
-                    <View style={styles.scaleContainer}>
-                        <View style={styles.scaleLine} />
-                        <Text style={styles.scaleText}>200 m</Text>
-                    </View>
-
-                    {/* User Location Dot */}
-                    <View style={styles.userLocation}>
-                        <View style={styles.userLocationDot} />
-                        <View style={styles.userLocationPulse} />
-                    </View>
+                    {loading && (
+                        <View className="absolute inset-0 justify-center items-center bg-white/50">
+                            <ActivityIndicator size="large" color={colors.primary} />
+                        </View>
+                    )}
                 </View>
 
                 {/* Legend */}
                 <MapLegend visible={showLegend} />
 
-                {/* Map Controls */}
-                <View style={styles.controls}>
+                {/* Center Map Button */}
+                <View className="absolute bottom-5 right-4 gap-2 z-10">
                     <TouchableOpacity
-                        style={styles.controlButton}
-                        onPress={handleZoomIn}
-                    >
-                        <Ionicons name="add" size={24} color={colors.textPrimary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.controlButton}
-                        onPress={handleZoomOut}
-                    >
-                        <Ionicons name="remove" size={24} color={colors.textPrimary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.controlButton}
+                        className="bg-[#2A2A2A] rounded-xl p-3 justify-center items-center w-13 h-13 shadow-lg"
                         onPress={handleCenterMap}
                     >
-                        <Ionicons name="locate" size={24} color={colors.textPrimary} />
+                        <Ionicons name="locate" size={24} color="white" />
                     </TouchableOpacity>
                 </View>
+
+                {/* Zone Details Modal */}
+                <ZoneDetailModal
+                    visible={!!selectedZone}
+                    zone={selectedZone}
+                    onClose={() => setSelectedZone(null)}
+                />
             </View>
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    content: {
-        flex: 1,
-    },
-    searchContainer: {
-        position: 'absolute',
-        top: Platform.OS === 'ios' ? spacing.md : spacing.lg,
-        left: spacing.md,
-        right: spacing.md,
-        zIndex: 10,
-        flexDirection: 'row',
-        gap: spacing.sm,
-    },
-    searchBar: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.backgroundCard,
-        borderRadius: 12,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        gap: spacing.sm,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    searchPlaceholder: {
-        color: colors.textSecondary,
-        fontSize: typography.fontSize.md,
-    },
-    legendButton: {
-        backgroundColor: colors.backgroundCard,
-        borderRadius: 12,
-        padding: spacing.sm,
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 48,
-        height: 48,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    mapContainer: {
-        flex: 1,
-        backgroundColor: '#E5E3DF',
-        overflow: 'hidden',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    mapImage: {
-        width: '100%',
-        height: '100%',
-    },
-    precisionBadge: {
-        position: 'absolute',
-        bottom: 120,
-        alignSelf: 'center',
-        backgroundColor: '#4A90E2',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 5,
-    },
-    precisionText: {
-        color: 'white',
-        fontSize: typography.fontSize.sm,
-        fontWeight: typography.fontWeight.medium,
-    },
-    scaleContainer: {
-        position: 'absolute',
-        bottom: 120,
-        right: spacing.md,
-        alignItems: 'flex-end',
-    },
-    scaleLine: {
-        width: 60,
-        height: 3,
-        backgroundColor: '#333',
-        marginBottom: 4,
-    },
-    scaleText: {
-        color: '#333',
-        fontSize: typography.fontSize.xs,
-        fontWeight: typography.fontWeight.medium,
-    },
-    userLocation: {
-        position: 'absolute',
-        bottom: '45%',
-        right: '15%',
-    },
-    userLocationDot: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        backgroundColor: '#4A90E2',
-        borderWidth: 3,
-        borderColor: 'white',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 5,
-    },
-    userLocationPulse: {
-        position: 'absolute',
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(74, 144, 226, 0.2)',
-        top: -12,
-        left: -12,
-    },
-    legend: {
-        position: 'absolute',
-        top: Platform.OS === 'ios' ? 80 : 90,
-        right: spacing.md,
-        backgroundColor: colors.backgroundCard,
-        borderRadius: 12,
-        padding: spacing.md,
-        zIndex: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    legendTitle: {
-        color: colors.textPrimary,
-        fontSize: typography.fontSize.md,
-        fontWeight: typography.fontWeight.semibold,
-        marginBottom: spacing.sm,
-    },
-    legendItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.xs,
-    },
-    legendColor: {
-        width: 16,
-        height: 16,
-        borderRadius: 4,
-        marginRight: spacing.sm,
-    },
-    legendText: {
-        color: colors.textSecondary,
-        fontSize: typography.fontSize.sm,
-    },
-    controls: {
-        position: 'absolute',
-        bottom: spacing.xl + 60, // Espacio para el tab bar
-        right: spacing.md,
-        gap: spacing.sm,
-        zIndex: 10,
-    },
-    controlButton: {
-        backgroundColor: colors.backgroundCard,
-        borderRadius: 12,
-        padding: spacing.sm,
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 48,
-        height: 48,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-});
