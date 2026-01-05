@@ -39,7 +39,7 @@ export const useNotifications = () => {
                     registerDevice(newToken, userId);
                 }
             } else {
-                console.log('No se pudo obtener el token o el ID del usuario');
+
             }
         });
 
@@ -51,7 +51,7 @@ export const useNotifications = () => {
         });
 
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-            console.log('Notificación tocada:', response);
+
         });
 
         return () => {
@@ -100,7 +100,7 @@ async function registerForPushNotificationsAsync() {
             finalStatus = status;
         }
         if (finalStatus !== 'granted') {
-            console.log('Permiso de notificaciones denegado');
+
             return;
         }
 
