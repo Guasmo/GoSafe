@@ -20,7 +20,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.SiderApp"
+      "package": "com.anonymous.SiderApp",
+      "googleServicesFile": "./google-services.json"
     },
     "edgeToEdgeEnabled": true,
     "predictiveBackGestureEnabled": false
