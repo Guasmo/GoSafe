@@ -1,10 +1,13 @@
 export interface UserInterface {
     id: string;
     email: string;
-    password: string;
+    password?: string;
     name: string;
-    userName: string
-    imageUrl: string;
-    created_at: string;
-    updated_at: string;
+    userName: string | null;
+    imageUrl: string | null;
+    device_token?: string;
+    routesCount: number;
+    totalKm: number;
+    createdAt: string;
+    updatedAt: string;
 }

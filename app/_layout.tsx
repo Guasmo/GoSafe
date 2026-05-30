@@ -1,8 +1,9 @@
-import { myToastConfig } from '@/components/toast';
 import { AuthProvider } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
+import { myToastConfig } from '@/src/presentation/components/toast';
+import "@react-native-firebase/app";
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

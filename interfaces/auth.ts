@@ -6,6 +6,7 @@ export interface AuthContextType {
     accessToken: string | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<{ success: boolean }>;
+    loginWithFacebook: () => Promise<{ success: boolean }>;
     logout: () => void;
 }
 
