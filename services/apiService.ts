@@ -16,11 +16,21 @@ const apiService = {
         return response.data
     },
 
-    createReqRes: async <T extends object, D>(
+    createReqRes: async <T extends object | FormData, D>(
         endpoint: string,
-        data: T
+        data: T,
+        headers?: any
     ): Promise<D> => {
-        const response = await api.post<D>(endpoint, data);
+        const config: any = {
+            headers: { ...headers }
+        };
+
+        if (data instanceof FormData) {
+            // Forzamos el Content-Type para multipart/form-data en React Native
+            config.headers['Content-Type'] = 'multipart/form-data';
+        }
+
+        const response = await api.post<D>(endpoint, data, config);
         return response.data;
     },
 

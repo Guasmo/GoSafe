@@ -1,6 +1,6 @@
+import { API_URL } from "@/config/Config";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-import { API_URL } from "../constants/Config";
 
 const api = axios.create({
     baseURL: API_URL,
@@ -15,7 +15,7 @@ api.interceptors.request.use(
         if (token) {
             config.headers["Authorization"] = `Bearer ${token}`;
         }
-
+        console.log(`[Axios Request] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
     },
     (error) => {
