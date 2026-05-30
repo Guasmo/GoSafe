@@ -2,8 +2,9 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { useUser } from '@/hooks/useUser';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Skeleton from 'react-native-reanimated-skeleton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
@@ -40,7 +41,8 @@ export default function ProfileScreen() {
     const [logoutLoading, setLogoutLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const { logout } = useAuthContext()
-    const { user, loading: userLoading, getUser } = useUser()
+    const { user, loading: userLoading, getUser, uploadProfileImage } = useUser()
+    const [uploadingImage, setUploadingImage] = useState(false);
 
     const handleLogout = async () => {
         setLogoutLoading(true);
@@ -52,6 +54,54 @@ export default function ProfileScreen() {
         setRefreshing(true);
         await getUser();
         setRefreshing(false);
+    };
+
+    const pickImage = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            if (status !== 'granted') {
+                Alert.alert('Permiso denegado', 'Necesitamos permisos para acceder a tus fotos');
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                console.log('[ProfileScreen] Image selected:', result.assets[0].uri);
+                handleUploadImage(result.assets[0].uri);
+            } else {
+                console.log('[ProfileScreen] Image selection cancelled');
+            }
+        } catch (error) {
+            console.error('[ProfileScreen] Error picking image:', error);
+            Alert.alert('Error', 'No se pudo seleccionar la imagen');
+        }
+    };
+
+    const handleUploadImage = async (uri: string) => {
+        console.log('[ProfileScreen] Starting upload for URI:', uri);
+        setUploadingImage(true);
+        try {
+            const result = await uploadProfileImage(uri);
+            console.log('[ProfileScreen] Upload result:', result);
+            if (result.success) {
+                console.log('[ProfileScreen] Upload successful');
+            } else {
+                console.error('[ProfileScreen] Upload failed:', result.error);
+                Alert.alert('Error', result.error || 'No se pudo subir la imagen');
+            }
+        } catch (error) {
+            console.error('[ProfileScreen] Unexpected error in handleUploadImage:', error);
+            Alert.alert('Error', 'No se pudo subir la imagen');
+        } finally {
+            setUploadingImage(false);
+        }
     };
 
     const skeletonConfig = {
@@ -106,15 +156,24 @@ export default function ProfileScreen() {
                                     <Image
                                         source={{ uri: user.imageUrl }}
                                         style={{ width: '100%', height: '100%', borderRadius: 50 }}
+                                        contentFit="cover"
                                     />
                                 ) : (
-                                    <Ionicons name="person-circle" size={24} color="#3B82F6" />
+                                    <Ionicons name="person-circle" size={80} color="#3B82F6" />
                                 )}
                             </View>
                         )}
                         {!userLoading && (
-                            <TouchableOpacity className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary justify-center items-center border-[3px] border-backgroundCard">
-                                <Ionicons name="camera" size={16} color={colors.textPrimary} />
+                            <TouchableOpacity
+                                className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary justify-center items-center border-[3px] border-backgroundCard"
+                                onPress={pickImage}
+                                disabled={uploadingImage}
+                            >
+                                {uploadingImage ? (
+                                    <ActivityIndicator size="small" color={colors.textPrimary} />
+                                ) : (
+                                    <Ionicons name="camera" size={16} color={colors.textPrimary} />
+                                )}
                             </TouchableOpacity>
                         )}
                     </View>
@@ -124,7 +183,7 @@ export default function ProfileScreen() {
                             <View style={{ width: 150, height: 24, borderRadius: 4, backgroundColor: skeletonConfig.boneColor }} />
                         </Skeleton>
                     ) : (
-                        <Text className="text-2xl font-bold text-textPrimary text-center mb-1">{user?.userName}</Text>
+                        <Text className="text-2xl font-bold text-textPrimary text-center mb-1">{user?.name || user?.userName}</Text>
                     )}
 
                     {userLoading ? (
@@ -148,7 +207,7 @@ export default function ProfileScreen() {
                                 </View>
                             ) : (
                                 <>
-                                    <Text className="text-2xl font-bold text-primary mb-1">24</Text>
+                                    <Text className="text-2xl font-bold text-primary mb-1">{user?.routesCount || 0}</Text>
                                     <Text className="text-sm text-textSecondary">Rutas</Text>
                                 </>
                             )}
@@ -166,7 +225,7 @@ export default function ProfileScreen() {
                                 </View>
                             ) : (
                                 <>
-                                    <Text className="text-2xl font-bold text-primary mb-1">156</Text>
+                                    <Text className="text-2xl font-bold text-primary mb-1">{Number(user?.totalKm || 0).toFixed(1)}</Text>
                                     <Text className="text-sm text-textSecondary">km</Text>
                                 </>
                             )}
@@ -184,7 +243,7 @@ export default function ProfileScreen() {
                                 </View>
                             ) : (
                                 <>
-                                    <Text className="text-2xl font-bold text-primary mb-1">12</Text>
+                                    <Text className="text-2xl font-bold text-primary mb-1">0</Text>
                                     <Text className="text-sm text-textSecondary">Alertas</Text>
                                 </>
                             )}
